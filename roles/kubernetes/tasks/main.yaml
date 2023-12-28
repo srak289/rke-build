@@ -1,84 +1,80 @@
-- hosts: kubernetes
-  become: True
-  gather_facts: False
-  tasks:
-    - name: Open Firewall for RKE2
-      ansible.builtin.shell:
-        cmd: |
-          firewall-cmd \
-            --add-port=2379/tcp \
-            --add-port=2380/tcp \
-            --add-port=6443/tcp \
-            --add-port=8472/udp \
-            --add-port=9345/tcp \
-            --add-port=10250/tcp \
-            --add-port=30000-32767/tcp \
-            --add-service=http \
-            --add-service=https \
-            --permanent
-          # 5473/tcp when deploying with calico
-          firewall-cmd --reload
+- name: Open Firewall
+  ansible.builtin.shell:
+    cmd: |
+      firewall-cmd \
+        --add-port=2379/tcp \
+        --add-port=2380/tcp \
+        --add-port=6443/tcp \
+        --add-port=8472/udp \
+        --add-port=9345/tcp \
+        --add-port=10250/tcp \
+        --add-port=30000-32767/tcp \
+        --add-service=http \
+        --add-service=https \
+        --permanent
+      # 5473/tcp when deploying with calico
+      firewall-cmd --reload
 
-          modprobe br_netfilter
-          sysctl -w net.bridge.bridge-nf-call-iptables=1
-          sysctl -w net.ipv4.ip_forward=1
-          swapoff -a
+      modprobe br_netfilter
+      sysctl -w net.bridge.bridge-nf-call-iptables=1
+      sysctl -w net.ipv4.ip_forward=1
+      swapoff -a
 
-    - name: Add Kubernetes Repo
-      ansible.builtin.copy:
-        content: |
-          [kubernetes]
-          name=Kubernetes
-          baseurl=https://pkgs.k8s.io/core:/stable:/v1.29/rpm/
-          enabled=1
-          gpgcheck=1
-          gpgkey=https://pkgs.k8s.io/core:/stable:/v1.29/rpm/repodata/repomd.xml.key
-          exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
-        dest: /etc/yum.repos.d/kubernetes.repo
+- name: Add Kubernetes Repo
+  ansible.builtin.copy:
+    content: |
+      [kubernetes]
+      name=Kubernetes
+      baseurl=https://pkgs.k8s.io/core:/stable:/v1.29/rpm/
+      enabled=1
+      gpgcheck=1
+      gpgkey=https://pkgs.k8s.io/core:/stable:/v1.29/rpm/repodata/repomd.xml.key
+      exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
+    dest: /etc/yum.repos.d/kubernetes.repo
 
-    - name: Install Kubernetes and Deps
-      ansible.builtin.dnf:
-        name:
-          - kubeadm
-          - kubectl
-          - kubelet
-          - docker-ce
-          - docker-ce-cli
-          - containerd.io
-          - docker-buildx-plugin
-          - docker-compose-plugin
-          - containernetworking-plugins
-        state: present
-        update_cache: True
-        disable_gpg_check: True
-        disable_excludes: kubernetes
+- name: Install Kubernetes and Deps
+  ansible.builtin.dnf:
+    name:
+      - kubeadm
+      - kubectl
+      - kubelet
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+      - containernetworking-plugins
+    state: present
+    update_cache: True
+    disable_gpg_check: True
+    disable_excludes: kubernetes
 
-    - name: Activate docker.socket
-      ansible.builtin.systemd:
-        name: docker.socket
-        state: restarted
-        enabled: True
-        daemon_reload: True
+- name: Activate docker.socket
+  ansible.builtin.systemd:
+    name: docker.socket
+    state: restarted
+    enabled: True
+    daemon_reload: True
 
-    - name: Activate cri-docker.socket
-      ansible.builtin.systemd:
-        name: cri-docker.socket
-        state: restarted
-        enabled: True
-        daemon_reload: True
+- name: Activate cri-docker.socket
+  ansible.builtin.systemd:
+    name: cri-docker.socket
+    state: restarted
+    enabled: True
+    daemon_reload: True
 
-    - name: Enable kubelet
-      ansible.builtin.systemd:
-        name: kubelet
-        state: restarted
-        enabled: True
+- name: Enable kubelet
+  ansible.builtin.systemd:
+    name: kubelet
+    state: restarted
+    enabled: True
 
-    - name: Check steve
-      ansible.builtin.stat:
-        path: /home/steve
-      register: steve
+- name: Check steve
+  ansible.builtin.stat:
+    path: /home/steve
+  register: steve
 
-    - name: Add user steve
-      ansible.builtin.include_tasks:
-        file: steve.yaml
-      when: not steve.stat.exists
+- name: Add user steve
+  ansible.builtin.include_tasks:
+    file: steve.yaml
+  when: not steve.stat.exists

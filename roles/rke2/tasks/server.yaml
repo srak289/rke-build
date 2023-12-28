@@ -5,7 +5,16 @@
       systemctl enable rke2-server.service
       systemctl start rke2-server.service
 
-- name: Check for cert
+- name: Create Rancher Config
+  ansible.builtin.copy:
+    content: |
+      token: some-shared-secret
+      tls-san:
+        - kubemaster
+        - kubemaster.subatomicnetworks.net
+    dest: /etc/rancher/rke2/config.yaml
+
+- name: Check Cert
   ansible.builtin.stat:
     path: /etc/pki/tls/certs/snakeoil.pem
   register: snakeoil
@@ -16,11 +25,18 @@
       openssl req \
         -x509 \
         -newkey rsa:2048 \
+        -days 3650 \
+        -sha256 \
         -nodes \
-        -keyout /etc/pki/tls/private/snakeoil.pem \
         -out /etc/pki/tls/certs/snakeoil.pem \
-        -subj "/O=SnakeOil/ST=Massachusetts/L=Cambridge/CN=kubemaster"
+        -keyout /etc/pki/tls/private/snakeoil.pem \
+        -addext "subjectAltName=DNS:kubemaster.subatomicnetworks.net,DNS:kubemaster" \
+        -subj "/O=SnakeOil/ST=Massachusetts/L=Cambridge/CN=kubemaster.subatomicnetworks.net"
   when: not snakeoil.stat.exists
+
+- name: Fetch Cert
+  ansible.builtin.fetch:
+    src: /etc/pki/tls/certs/snakeoil.pem
 
 - name: Install Nginx
   ansible.builtin.dnf:

@@ -1,61 +1,42 @@
-- hosts: kubernetes
-  become: True
-  gather_facts: False
-  tasks:
-    - name: Open Firewall for RKE2
-      ansible.builtin.shell:
-        cmd: |
-          firewall-cmd \
-            --add-port=2379/tcp \
-            --add-port=2380/tcp \
-            --add-port=6443/tcp \
-            --add-port=8472/udp \
-            --add-port=9345/tcp \
-            --add-port=10250/tcp \
-            --add-port=30000-32767/tcp \
-            --add-service=http \
-            --add-service=https \
-            --permanent
-          # 5473/tcp when deploying with calico
-          firewall-cmd --reload
+- name: Open Firewall for RKE2
+  ansible.builtin.shell:
+    cmd: |
+      firewall-cmd \
+        --add-port=2379/tcp \
+        --add-port=2380/tcp \
+        --add-port=6443/tcp \
+        --add-port=8472/udp \
+        --add-port=9345/tcp \
+        --add-port=10250/tcp \
+        --add-port=30000-32767/tcp \
+        --add-service=http \
+        --add-service=https \
+        --permanent
+      # 5473/tcp when deploying with calico
+      firewall-cmd --reload
 
-          modprobe br_netfilter
-          sysctl -w net.bridge.bridge-nf-call-iptables=1
-          sysctl -w net.ipv4.ip_forward=1
-          swapoff -a
+      modprobe br_netfilter
+      sysctl -w net.bridge.bridge-nf-call-iptables=1
+      sysctl -w net.ipv4.ip_forward=1
+      swapoff -a
 
-    - name: Add Kubernetes 1.26 Repo
-      ansible.builtin.copy:
-        content: |
-          [kubernetes]
-          name=Kubernetes
-          baseurl=https://pkgs.k8s.io/core:/stable:/v1.26/rpm/
-          enabled=1
-          gpgcheck=1
-          gpgkey=https://pkgs.k8s.io/core:/stable:/v1.26/rpm/repodata/repomd.xml.key
-          exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
-        dest: /etc/yum.repos.d/kubernetes.repo
-    
-    - name: Create Rancher Dir
-      ansible.builtin.file:
-        name: /etc/rancher/rke2/
-        state: directory
-        mode: '0755'
-    
-    - name: Create Rancher Config
-      ansible.builtin.copy:
-        content: |
-          token: some-some-some-some
-          tls-san:
-            - kubemaster
-        dest: /etc/rancher/rke2/config.yaml
+- name: Add Kubernetes {{kubernetes_version}} Repo
+  ansible.builtin.template:
+    src: kubernetes.repo.j2
+    dest: /etc/yum.repos.d/kubernetes.repo
 
-    - name: Include server setup
-      ansible.builtin.include_tasks:
-        file: server.yaml
-      when: ""
+- name: Create Rancher Dir
+  ansible.builtin.file:
+    name: /etc/rancher/rke2/
+    state: directory
+    mode: '0755'
 
-    - name: Include agent setup
-      ansible.builtin.include_tasks:
-        file: agent.yaml
-      when: ""
+- name: Include server setup
+  ansible.builtin.include_tasks:
+    file: server.yaml
+  when: "'kmaster' in group_names"
+
+- name: Include agent setup
+  ansible.builtin.include_tasks:
+    file: agent.yaml
+  when: "'kworker' in group_names"

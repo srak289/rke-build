@@ -1,31 +1,27 @@
-- hosts: kubernetes
-  gather_facts: False
-  become: True
-  tasks:
-    - name: add steve
-      ansible.builtin.user:
-        name: steve
-        state: present
+- name: add steve
+  ansible.builtin.user:
+    name: steve
+    state: present
 
-    - name: Add sudo
-      ansible.builtin.copy:
-        content: |
-          steve ALL=(ALL) NOPASSWD:ALL
-        dest: /etc/sudoers.d/steve
+- name: Add sudo
+  ansible.builtin.copy:
+    content: |
+      steve ALL=(ALL) NOPASSWD:ALL
+    dest: /etc/sudoers.d/steve
 
-    - name: Make ssh dir
-      ansible.builtin.file:
-        path: /home/steve/.ssh
-        state: directory
-        owner: steve
-        group: steve
-        mode: '0700'
+- name: Make ssh dir
+  ansible.builtin.file:
+    path: /home/steve/.ssh
+    state: directory
+    owner: steve
+    group: steve
+    mode: '0700'
 
-    - name: Set auth keys
-      ansible.builtin.copy:
-        content: |
-          ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDRb3Pa66EAeKPnz2bOC3oLPmMFUocEiUyaEDg2EP0Rs/lUFuPAsDDjJ2UjVqP1QCnTOwJAXBFmHH8oJYvjl6uDJB2p3Hfz3OZNQVXRxz4FRWgjazOcj9sszQHpMVLRG72+Fj80zg99dsQvgW32ieFBShie0QfG9YjoSI1qdcFLtEIWJzoSComkcCRqii6kSp3p5PU2PRnMLKNLlseaxpbbAsMn1tX9dGgp59Y8S8l4NVsMXZnvNSPlX/eoMdGjr29XEE2ZtcbjfvbjCM2zGcIifNleF8vgB0/VO3ReEPmTuLU5K50it89JDEG8ntu8bC4z5iai4nQKLKya1lEid1bhx0nN7uu5AY2glhdmT9gEhgNSfv+TDyOJcPnx7vspH4JpDkajBdn6C9Ww4U145nAVK1PcjGsCJo+c09qSSqp4dREhQf0bo/fXFEBS00nfctrXky7Z3L8YeFeBP8gCX98drd8oVx2Agt9ZcBmS93Sw1djxpoU8MEfZqf4Js3TM9Ts= steve@phoenix
-        dest: /home/steve/.ssh/authorized_keys
-        owner: steve
-        group: steve
-        mode: '0600'
+- name: Set auth keys
+  ansible.builtin.copy:
+    content: |
+      ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDRb3Pa66EAeKPnz2bOC3oLPmMFUocEiUyaEDg2EP0Rs/lUFuPAsDDjJ2UjVqP1QCnTOwJAXBFmHH8oJYvjl6uDJB2p3Hfz3OZNQVXRxz4FRWgjazOcj9sszQHpMVLRG72+Fj80zg99dsQvgW32ieFBShie0QfG9YjoSI1qdcFLtEIWJzoSComkcCRqii6kSp3p5PU2PRnMLKNLlseaxpbbAsMn1tX9dGgp59Y8S8l4NVsMXZnvNSPlX/eoMdGjr29XEE2ZtcbjfvbjCM2zGcIifNleF8vgB0/VO3ReEPmTuLU5K50it89JDEG8ntu8bC4z5iai4nQKLKya1lEid1bhx0nN7uu5AY2glhdmT9gEhgNSfv+TDyOJcPnx7vspH4JpDkajBdn6C9Ww4U145nAVK1PcjGsCJo+c09qSSqp4dREhQf0bo/fXFEBS00nfctrXky7Z3L8YeFeBP8gCX98drd8oVx2Agt9ZcBmS93Sw1djxpoU8MEfZqf4Js3TM9Ts= steve@phoenix
+    dest: /home/steve/.ssh/authorized_keys
+    owner: steve
+    group: steve
+    mode: '0600'
