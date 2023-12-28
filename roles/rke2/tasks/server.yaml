@@ -1,9 +1,13 @@
+- name: Check for rke2-server
+  ansible.builtin.stat:
+    path: /usr/lib/systemd/system/rke2-server.service
+  register: rke2_server
+
 - name: Install rke2 server
   ansible.builtin.shell:
     cmd: |
       curl -sfL https://get.rke2.io | sh -
-      systemctl enable rke2-server.service
-      systemctl start rke2-server.service
+  when: not rke2_server.stat.exists
 
 - name: Create Rancher Config
   ansible.builtin.copy:
@@ -13,6 +17,7 @@
         - kubemaster
         - kubemaster.subatomicnetworks.net
     dest: /etc/rancher/rke2/config.yaml
+  notify: Restart rke2-server
 
 - name: Check Cert
   ansible.builtin.stat:
@@ -34,19 +39,28 @@
         -subj "/O=SnakeOil/ST=Massachusetts/L=Cambridge/CN=kubemaster.subatomicnetworks.net"
   when: not snakeoil.stat.exists
 
-- name: Fetch Cert
+- name: Fetch Files
   ansible.builtin.fetch:
-    src: /etc/pki/tls/certs/snakeoil.pem
+    src: "{{item}}"
+    dest: host_files/{{inventory_hostname}}/
+    flat: True
+  loop:
+    - /etc/pki/tls/certs/snakeoil.pem
+    - /var/lib/rancher/rke2/server/token
 
-- name: Install Nginx
+- name: Install Requirements
   ansible.builtin.dnf:
-    name: nginx
+    name:
+      - nginx
+      - kubectl
     state: present
+    disable_excludes: kubernetes
 
 - name: Configure nginx
   ansible.builtin.copy:
     src: nginx.conf
     dest: /etc/nginx/nginx.conf
+  notify: Restart Nginx
 
 - name: Make .kube
   ansible.builtin.file:
@@ -57,14 +71,15 @@
   ansible.builtin.copy:
     src: /etc/rancher/rke2/rke2.yaml
     dest: /root/.kube/config
-    remote_source: True
+    remote_src: True
 
-- name: Install kubectl
-  ansible.builtin.dnf:
-    name: kubectl
-    state: present
+- name: fail
+  ansible.builtin.fail:
+    msg: fail
 
-- name: Restart nginx
-  ansible.builtin.systemd:
-    name: nginx
-    state: restarted
+- name: Add dashboard
+  ansible.builtin.shell:
+    cmd: |
+      kubectl apply \
+        -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
+      kubectl proxy

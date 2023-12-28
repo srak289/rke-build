@@ -9,6 +9,8 @@
         --add-port=9345/tcp \
         --add-port=10250/tcp \
         --add-port=30000-32767/tcp \
+        --permanent
+      firewall-cmd \
         --add-service=http \
         --add-service=https \
         --permanent

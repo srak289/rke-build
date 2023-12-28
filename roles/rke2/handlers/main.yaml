@@ -1,0 +1,25 @@
+- name: Update CA Trust
+  ansible.builtin.shell:
+    cmd: |
+      update-ca-trust
+
+- name: Restart Nginx
+  ansible.builtin.systemd:
+    name: nginx
+    state: restarted
+    enabled: True
+    no_block: True
+
+- name: Restart rke2-agent
+  ansible.builtin.systemd:
+    name: rke2-agent
+    state: restarted
+    enabled: True
+    no_block: True
+
+- name: Restart rke2-server
+  ansible.builtin.systemd:
+    name: rke2-server
+    state: restarted
+    enabled: True
+    no_block: True
