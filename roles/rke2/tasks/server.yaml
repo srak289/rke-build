@@ -1,0 +1,54 @@
+- name: Install rke2 server
+  ansible.builtin.shell:
+    cmd: |
+      curl -sfL https://get.rke2.io | sh -
+      systemctl enable rke2-server.service
+      systemctl start rke2-server.service
+
+- name: Check for cert
+  ansible.builtin.stat:
+    path: /etc/pki/tls/certs/snakeoil.pem
+  register: snakeoil
+
+- name: Generate Cert
+  ansible.builtin.shell:
+    cmd: |
+      openssl req \
+        -x509 \
+        -newkey rsa:2048 \
+        -nodes \
+        -keyout /etc/pki/tls/private/snakeoil.pem \
+        -out /etc/pki/tls/certs/snakeoil.pem \
+        -subj "/O=SnakeOil/ST=Massachusetts/L=Cambridge/CN=kubemaster"
+  when: not snakeoil.stat.exists
+
+- name: Install Nginx
+  ansible.builtin.dnf:
+    name: nginx
+    state: present
+
+- name: Configure nginx
+  ansible.builtin.copy:
+    src: nginx.conf
+    dest: /etc/nginx/nginx.conf
+
+- name: Make .kube
+  ansible.builtin.file:
+    path: /root/.kube
+    state: directory
+
+- name: Save credentials
+  ansible.builtin.copy:
+    src: /etc/rancher/rke2/rke2.yaml
+    dest: /root/.kube/config
+    remote_source: True
+
+- name: Install kubectl
+  ansible.builtin.dnf:
+    name: kubectl
+    state: present
+
+- name: Restart nginx
+  ansible.builtin.systemd:
+    name: nginx
+    state: restarted

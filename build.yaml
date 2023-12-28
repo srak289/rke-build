@@ -1,0 +1,6 @@
+- hosts: kubernetes
+  become: True
+  gather_facts: False
+  roles:
+    - rke2
+    - users
