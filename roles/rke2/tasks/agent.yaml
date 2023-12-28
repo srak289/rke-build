@@ -19,6 +19,7 @@
 - name: Create Rancher Config
   ansible.builtin.copy:
     content: |
+      cni: canal
       server: https://kubemaster.subatomicnetworks.net:9345
       token: "{{token.stdout}}"
     dest: /etc/rancher/rke2/config.yaml

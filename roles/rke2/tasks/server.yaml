@@ -9,10 +9,17 @@
       curl -sfL https://get.rke2.io | sh -
   when: not rke2_server.stat.exists
 
+- name: Register token
+  ansible.builtin.shell:
+    cmd: |
+      cat /var/lib/rancher/rke2/server/token
+  register: token
+
 - name: Create Rancher Config
   ansible.builtin.copy:
     content: |
-      token: some-shared-secret
+      cni: canal
+      token: "{{token.stdout}}"
       tls-san:
         - kubemaster
         - kubemaster.subatomicnetworks.net
